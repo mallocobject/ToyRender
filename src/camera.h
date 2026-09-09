@@ -11,14 +11,14 @@ class Camera {
     glm::mat4 inv_combined_matrix{};
 
   public:
-    void init(const glm::vec3 &p,
-              const glm::vec3 &target,
-              const glm::vec3 &up,
-              float fov,
-              float n,
-              float f,
-              int W,
-              int H);
+    Camera(const glm::vec3 &p,
+           const glm::vec3 &target,
+           const glm::vec3 &up,
+           float fov,
+           float n,
+           float f,
+           int W,
+           int H);
 
     Ray get_ray(int x, int y) const;
 };

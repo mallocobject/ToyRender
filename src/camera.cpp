@@ -4,15 +4,15 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
 
-void Camera::init(const glm::vec3 &p,
-                  const glm::vec3 &target,
-                  const glm::vec3 &up,
-                  float fov,
-                  float n,
-                  float f,
-                  int W,
-                  int H) {
-    position_ = p;
+Camera::Camera(const glm::vec3 &p,
+               const glm::vec3 &target,
+               const glm::vec3 &up,
+               float fov,
+               float n,
+               float f,
+               int W,
+               int H)
+    : position_(p) {
     auto view_matrix = glm::lookAtLH(p, target, up);
     auto proj_matrix = glm::perspectiveFovLH_ZO(
         fov, static_cast<float>(W), static_cast<float>(H), n, f);

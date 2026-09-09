@@ -43,7 +43,7 @@ class SceneObject {
         primitives_.push_back(std::move(p));
     }
 
-    bool intersect(const Ray &ray, Intersection &isect) const;
+    bool intersect(Ray &ray, Intersection &isect) const;
 };
 
 inline SceneObject::SceneObject(const glm::vec3 &postion,
@@ -57,13 +57,14 @@ inline SceneObject::SceneObject(const glm::vec3 &postion,
     auto S = glm::scale(glm::mat4{1.0f}, scale);
 
     obj2world = T * R * S;
+    world2obj = glm::inverse(obj2world);
 }
 
-inline bool SceneObject::intersect(const Ray &ray, Intersection &isect) const {
+inline bool SceneObject::intersect(Ray &ray, Intersection &isect) const {
     bool hit = false;
-    for (Intersection tmp_isect{}; auto &&primitive : primitives_) {
-        if (primitive->intersect(ray, tmp_isect) && tmp_isect.t < isect.t) {
-            isect = tmp_isect;
+    for (auto &&primitive : primitives_) {
+        if (primitive->intersect(ray, isect)) {
+            ray.maxt = isect.t;
             hit = true;
         }
     }

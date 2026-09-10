@@ -10,26 +10,26 @@ Camera::Camera(const glm::vec3 &p,
                float fov,
                float n,
                float f,
-               int W,
-               int H)
+               int w,
+               int h)
     : position_(p) {
     auto view_matrix = glm::lookAtLH(p, target, up);
     auto proj_matrix = glm::perspectiveFovLH_ZO(
-        fov, static_cast<float>(W), static_cast<float>(H), n, f);
-    auto vp_matrix = glm::mat4{W / 2.f,
+        fov, static_cast<float>(w), static_cast<float>(h), n, f);
+    auto vp_matrix = glm::mat4{w / 2.f,
                                0.f,
                                0.f,
                                0.f,
                                0.f,
-                               -H / 2.f,
+                               -h / 2.f,
                                0.f,
                                0.f,
                                0.f,
                                0.f,
                                1.f,
                                0.f,
-                               W / 2.f,
-                               H / 2.f,
+                               w / 2.f,
+                               h / 2.f,
                                0.f,
                                1.f};
 
@@ -37,7 +37,7 @@ Camera::Camera(const glm::vec3 &p,
     inv_combined_matrix = glm::inverse(combined_matrix);
 }
 
-Ray Camera::get_ray(int x, int y) const {
+Ray Camera::get_ray(float x, float y) const {
     Ray ray{};
     ray.o = position_;
 

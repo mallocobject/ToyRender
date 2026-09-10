@@ -2,7 +2,10 @@
 
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/vector_float3.hpp"
+#include "intersection.h"
+#include "material.h"
 #include "primitive.h"
+#include "ray.h"
 #include <algorithm>
 #include <cfloat>
 #include <memory>
@@ -11,9 +14,8 @@
 
 #include <glm/ext/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/euler_angles.hpp>
 
-using Color = glm::vec3;
+#include <glm/gtx/euler_angles.hpp>
 
 class SceneObject {
   private:
@@ -21,13 +23,14 @@ class SceneObject {
     glm::mat4 world2obj{};
 
     std::vector<std::unique_ptr<Primitive>> primitives_;
+    std::shared_ptr<Material> material_{};
 
   public:
     SceneObject(const glm::vec3 &postion,
                 const glm::vec3 &euler,
                 const glm::vec3 &scale);
 
-    ~SceneObject(){};
+    ~SceneObject() = default;
 
     const auto &get_obj2world() const {
         return obj2world;
@@ -44,30 +47,12 @@ class SceneObject {
     }
 
     bool intersect(Ray &ray, Intersection &isect) const;
-};
 
-inline SceneObject::SceneObject(const glm::vec3 &postion,
-                                const glm::vec3 &euler,
-                                const glm::vec3 &scale) {
-
-    auto T = glm::translate(glm::mat4{1.0f}, postion);
-
-    auto R = glm::eulerAngleXYZ(euler.x, euler.y, euler.z);
-
-    auto S = glm::scale(glm::mat4{1.0f}, scale);
-
-    obj2world = T * R * S;
-    world2obj = glm::inverse(obj2world);
-}
-
-inline bool SceneObject::intersect(Ray &ray, Intersection &isect) const {
-    bool hit = false;
-    for (auto &&primitive : primitives_) {
-        if (primitive->intersect(ray, isect)) {
-            ray.maxt = isect.t;
-            hit = true;
-        }
+    void set_material(std::shared_ptr<Material> material) {
+        material_ = std::move(material);
     }
 
-    return hit;
-}
+    const std::shared_ptr<Material> &get_material() const {
+        return material_;
+    }
+};

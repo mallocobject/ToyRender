@@ -1,7 +1,7 @@
 #include "disk.h"
 #include "glm/ext/vector_float4.hpp"
 #include "primitive.h"
-#include "scene_object.hpp"
+#include "scene_object.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
@@ -13,7 +13,7 @@ Disk::Disk(SceneObject *parent, float radius)
 bool Disk::intersect(const Ray &ray, Intersection &isect) const {
     Ray r = parent_->get_world2obj() * ray;
 
-    if (fabs(r.o.z) < 1e-6f) {
+    if (std::fabs(r.o.z) < 1e-6f) {
         return false;
     }
 

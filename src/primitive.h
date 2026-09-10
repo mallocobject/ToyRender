@@ -5,15 +5,9 @@
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
+#include "intersection.h"
+#include "ray.h"
 #include <cfloat>
-
-struct Ray {
-    glm::vec3 o{};
-    glm::vec3 d{};
-
-    float mint = 0.f;
-    float maxt = FLT_MAX;
-};
 
 inline Ray operator*(const glm::mat4 &m, const Ray &r) {
     Ray result;
@@ -23,12 +17,6 @@ inline Ray operator*(const glm::mat4 &m, const Ray &r) {
     result.maxt = r.maxt;
     return result;
 }
-
-struct Intersection {
-    glm::vec3 postion{};
-    glm::vec3 normal{};
-    float t{FLT_MAX};
-};
 
 class SceneObject;
 

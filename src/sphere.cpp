@@ -2,7 +2,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include "primitive.h"
-#include "scene_object.hpp"
+#include "scene_object.h"
 #include <cmath>
 
 Sphere::Sphere(SceneObject *parent, float radius)

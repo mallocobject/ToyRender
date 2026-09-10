@@ -2,7 +2,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include "primitive.h"
-#include "scene_object.hpp"
+#include "scene_object.h"
 #include <cmath>
 
 Triangle::Triangle(SceneObject *parent,
@@ -32,7 +32,7 @@ bool Triangle::intersect(const Ray &ray, Intersection &isect) const {
     auto s2 = glm::cross(s, e1);
 
     float det = glm::dot(s1, e1);
-    if (fabs(det) < 1e-6f) {
+    if (std::fabs(det) < 1e-6f) {
         return false;
     }
 

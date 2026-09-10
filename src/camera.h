@@ -2,7 +2,7 @@
 
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/vector_float3.hpp"
-#include "primitive.h"
+#include "ray.h"
 
 class Camera {
   private:
@@ -17,8 +17,8 @@ class Camera {
            float fov,
            float n,
            float f,
-           int W,
-           int H);
+           int w,
+           int h);
 
-    Ray get_ray(int x, int y) const;
+    Ray get_ray(float x, float y) const;
 };

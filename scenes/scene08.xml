@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene version="1.0">
+    <!-- 相机靠近盒口，让康奈尔盒尽量占满视野 -->
+    <camera position="0,0,1.5" target="0,0,5" up="0,1,0" fov="60" near="0.1" far="1000"/>
+
+    <!-- 白色球使用高反射率，墙面保留红/绿/白经典配色 -->
+    <materials>
+        <material name="white_wall" type="lambert" albedo="0.75,0.75,0.75"/>
+        <material name="red_wall" type="lambert" albedo="0.65,0.05,0.05"/>
+        <material name="green_wall" type="lambert" albedo="0.12,0.45,0.12"/>
+        <material name="white_sphere" type="lambert" albedo="0.98,0.98,0.98"/>
+    </materials>
+
+    <!-- 一个点光源 + 一个聚光灯；两者强度适当提高，同时避免高反射率白球过曝 -->
+    <lights>
+        <!-- 顶部偏前的暖色点光源 -->
+        <light type="point"
+               position="0,1.6,5.3"
+               color="1.05,1.02,0.96"
+               attenuation="0,0,1"/>
+
+        <!-- 左上方聚光灯，斜向照向盒子中央区域 -->
+        <light type="spot"
+               position="-1.2,1.8,5.6"
+               direction="1.2,-2.3,1.9"
+               color="1.15,1.10,1.05"
+               innerAngle="30"
+               outerAngle="55"
+               attenuation="0,0,1"/>
+    </lights>
+
+    <objects>
+        <!-- 白色部分：地板、天花板、后墙 -->
+        <object name="white_walls" material="white_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <!-- 地板 y=-2.05 -->
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,-2.05,9" v2="2.75,-2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,-2.05,5"/>
+            <!-- 天花板 y=2.05 -->
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,5" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,9" v2="-2.75,2.05,9"/>
+            <!-- 后墙 z=9 -->
+            <triangle v0="-2.75,-2.05,9" v1="-2.75,2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="2.75,2.05,9" v2="2.75,-2.05,9"/>
+        </object>
+
+        <!-- 左侧红墙 x=-2.75 -->
+        <object name="red_wall" material="red_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,5" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,9" v2="-2.75,-2.05,9"/>
+        </object>
+
+        <!-- 右侧绿墙 x=2.75 -->
+        <object name="green_wall" material="green_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="2.75,-2.05,5" v1="2.75,2.05,9" v2="2.75,2.05,5"/>
+        </object>
+
+        <!-- 左侧纯白球：靠近红墙，阴影侧更容易接收红色间接光 -->
+        <object name="sphere_left" material="white_sphere"
+                position="-1.6,-1.25,6.8" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.80"/>
+        </object>
+
+        <!-- 右侧纯白球：靠近绿墙，阴影侧更容易接收绿色间接光 -->
+        <object name="sphere_right" material="white_sphere"
+                position="1.6,-1.35,7.8" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.70"/>
+        </object>
+    </objects>
+</scene>

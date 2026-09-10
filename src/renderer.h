@@ -1,22 +1,22 @@
 #pragma once
 
-#include "scene.h"
-#include "scene_object.hpp"
+#include "ray.h"
+#include "utils.h"
 #include <atomic>
 #include <cstdint>
 #include <glm/vec3.hpp>
 #include <memory>
 #include <string>
 
-using Color = glm::vec3;
+class Scene;
 
-class Primitive;
-
-class Render {
+class Renderer {
   private:
     int viewport_width_{800};
     int viewport_height_{600};
     int sample_per_pixel_{100};
+    int max_depth_{10};
+    int min_depth_{3};
 
     uint32_t *buffer_{nullptr};
     std::atomic<int> current_row_pixel_index_{0};
@@ -24,21 +24,21 @@ class Render {
     std::unique_ptr<Scene> scene_;
 
   public:
-    Render(int w,
-           int h,
-           int sample_per_pixel = 100,
-           const std::string &scene_file = "scenes/scenes.xml");
+    Renderer(int w,
+             int h,
+             int sample_per_pixel = 100,
+             int min_depth = 3,
+             int max_depth = 10,
+             const std::string &scene_file = "scenes/scene02.xml");
 
-    ~Render();
+    ~Renderer();
 
     void run();
 
   private:
     Color render_pixel(int x, int y) const;
     Color render_sub_pixed(float px, float py) const;
+    Color get_radiance(Ray &ray, int depth = 0) const;
 
     void run_render_thread();
-
-    bool load_scene_from_xml(const std::string &scene_file, int w, int h);
-    std::unique_ptr<Scene> create_default_scene(int w, int h) const;
 };

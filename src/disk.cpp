@@ -6,12 +6,12 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
 
-Disk::Disk(SceneObject *parent, float radius)
+Disk::Disk(SceneObject &parent, float radius)
     : Primitive(parent), radius_(radius) {
 }
 
 bool Disk::intersect(const Ray &ray, Intersection &isect) const {
-    Ray r = parent_->get_world2obj() * ray;
+    Ray r = parent_.get_world2obj() * ray;
 
     if (std::fabs(r.o.z) < 1e-6f) {
         return false;
@@ -30,9 +30,9 @@ bool Disk::intersect(const Ray &ray, Intersection &isect) const {
     }
 
     isect.t = t;
-    isect.postion = parent_->get_obj2world() * glm::vec4{p, 1.f};
-    isect.normal = glm::normalize(parent_->get_obj2world() *
-                                  glm::vec4{0.f, 0.f, 1.f, 0.f});
+    isect.postion = parent_.get_obj2world() * glm::vec4{p, 1.f};
+    isect.normal =
+        glm::normalize(parent_.get_obj2world() * glm::vec4{0.f, 0.f, 1.f, 0.f});
 
     return true;
 }

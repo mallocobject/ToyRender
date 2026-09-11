@@ -9,6 +9,6 @@ class Sphere : public Primitive {
     float radius_{0.f};
 
   public:
-    Sphere(SceneObject *parent, float radius);
+    Sphere(SceneObject &parent, float radius);
     bool intersect(const Ray &ray, Intersection &isect) const override;
 };

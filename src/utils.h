@@ -1,11 +1,13 @@
 #pragma once
 
 #include "glm/ext/scalar_constants.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/geometric.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <optional>
 #include <random>
 
 using Color = glm::vec3;
@@ -32,28 +34,113 @@ inline constexpr glm::vec3 spherical_coordinate(float theta, float phi) {
                      std::cos(theta)};
 }
 
-// 按余弦权重在 normal 所朝半球内采样，返回世界空间单位方向。
-inline glm::vec3 sample_cosine_hemisphere(const glm::vec3 &normal) {
-    const glm::vec3 n = glm::normalize(normal);
+struct TangentFrame {
+    glm::vec3 tangent{};
+    glm::vec3 bitangent{};
+    glm::vec3 normal{};
+};
 
+// 构造以 normal 为 Z 轴的正交基。
+inline TangentFrame build_tangent_frame(const glm::vec3 &normal) {
+    TangentFrame frame;
+    frame.normal = glm::normalize(normal);
+
+    const glm::vec3 up = std::fabs(frame.normal.z) < 0.999f
+                             ? glm::vec3{0.f, 0.f, 1.f}
+                             : glm::vec3{1.f, 0.f, 0.f};
+
+    frame.tangent = glm::normalize(glm::cross(up, frame.normal));
+    frame.bitangent = glm::cross(frame.normal, frame.tangent);
+    return frame;
+}
+
+// 世界方向 -> 切线空间局部方向。
+inline glm::vec3 to_local(const glm::vec3 &direction,
+                          const TangentFrame &frame) {
+    return glm::vec3{glm::dot(direction, frame.tangent),
+                     glm::dot(direction, frame.bitangent),
+                     glm::dot(direction, frame.normal)};
+}
+
+// 切线空间局部方向 -> 世界方向。
+inline glm::vec3 to_world(const glm::vec3 &direction,
+                          const TangentFrame &frame) {
+    return frame.tangent * direction.x + frame.bitangent * direction.y +
+           frame.normal * direction.z;
+}
+
+// 按余弦权重在切线空间 +Z 半球内采样，返回局部方向。
+inline glm::vec3 sample_cosine_hemisphere() {
     const float r1 = random_float();
     const float r2 = random_float();
+
+    // const float cos_theta = std::clamp(1.f - r1, 0.f, 1.f);
+    // const float sin_theta = std::sqrt(1.f - cos_theta * cos_theta);
 
     const float phi = PI_DOUBLE * r2;
     const float sin_theta = std::sqrt(r1);
     const float cos_theta = std::sqrt(std::max(0.f, 1.f - r1));
 
-    const glm::vec3 local_dir{
+    return glm::vec3{
         sin_theta * std::cos(phi),
         sin_theta * std::sin(phi),
         cos_theta,
     };
+}
 
-    const glm::vec3 up = std::fabs(n.z) < 0.999f ? glm::vec3{0.f, 0.f, 1.f}
-                                                 : glm::vec3{1.f, 0.f, 0.f};
-    const glm::vec3 tangent = glm::normalize(glm::cross(up, n));
-    const glm::vec3 bitangent = glm::cross(n, tangent);
+// 兼容接口：围绕 normal 采样，返回世界空间方向。
+inline glm::vec3 sample_cosine_hemisphere(const glm::vec3 &normal) {
+    const TangentFrame frame = build_tangent_frame(normal);
+    return glm::normalize(to_world(sample_cosine_hemisphere(), frame));
+}
 
-    return glm::normalize(tangent * local_dir.x + bitangent * local_dir.y +
-                          n * local_dir.z);
+// local space: normal = +Z
+inline std::optional<glm::vec3>
+compute_refract_vec(const glm::vec3 &wi_in, float eta_i, float eta_t) {
+    if (eta_i <= 0.f || eta_t <= 0.f) {
+        return std::nullopt;
+    }
+
+    const glm::vec3 wi = glm::normalize(wi_in);
+
+    // 正入射时 cos_i = 1，仍然应该发生折射，不能返回 nullopt。
+    const float cos_i = std::clamp(std::fabs(wi.z), 0.f, 1.f);
+    const float eta = eta_i / eta_t;
+
+    const float sin2_i = std::max(1.f - cos_i * cos_i, 0.f);
+    const float sin2_t = sin2_i * eta * eta;
+
+    // 全反射
+    if (sin2_t >= 1.f) {
+        return std::nullopt;
+    }
+
+    const float cos_t = std::sqrt(1.f - sin2_t);
+
+    glm::vec3 wt = wi * glm::vec3{-eta, -eta, 1.f};
+    wt.z = wi.z > 0.f ? -cos_t : cos_t;
+
+    return glm::normalize(wt);
+}
+
+inline glm::vec2 uniform_sample_disk(float R) {
+    float u1 = random_float();
+    float u2 = random_float();
+
+    float r = r * std::sqrt(u1);
+    float theta = PI_DOUBLE * u2;
+
+    return glm::vec2{r * std::cos(theta), r * std::sin(theta)};
+}
+
+inline glm::vec3 uniform_sample_sphere(float R) {
+    float u1 = random_float();
+    float u2 = random_float();
+    float u3 = random_float();
+
+    float cos_theta = 1 - u1;
+    float sin_theta = std::sqrt(1 - cos_theta * cos_theta);
+    float phi = PI_DOUBLE * u2;
+
+    return glm::vec3{};
 }

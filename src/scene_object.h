@@ -42,7 +42,7 @@ class SceneObject {
 
     template <typename T, typename... Args>
     void create_object(Args &&...args) {
-        auto p = std::make_unique<T>(this, std::forward<Args>(args)...);
+        auto p = std::make_unique<T>(*this, std::forward<Args>(args)...);
         primitives_.push_back(std::move(p));
     }
 

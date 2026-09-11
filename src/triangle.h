@@ -11,7 +11,7 @@ class Triangle : public Primitive {
     glm::vec3 normal_{};
 
   public:
-    Triangle(SceneObject *parent,
+    Triangle(SceneObject &parent,
              const glm::vec3 &v0,
              const glm::vec3 &v1,
              const glm::vec3 &v2);

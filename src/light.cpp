@@ -20,10 +20,10 @@ Color SpotLight::get_radiance(const glm::vec3 &p, glm::vec3 &s) const {
     Color radiance = PointLight::get_radiance(p, s);
 
     glm::vec3 op = glm::normalize(p - position_);
-    float theta_cos = glm::dot(op, direction_);
+    float cos_theta = glm::dot(op, direction_);
 
     float k2 =
-        (outer_angle_cos_ - theta_cos) / (outer_angle_cos_ - inner_angle_cos_);
+        (cos_outer_angle_ - cos_theta) / (cos_outer_angle_ - cos_inner_angle_);
 
     return radiance * glm::clamp(k2, 0.f, 1.f);
 }

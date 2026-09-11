@@ -43,8 +43,8 @@ class PointLight : public Light {
 class SpotLight : public PointLight {
   private:
     glm::vec3 direction_{};
-    float inner_angle_cos_{};
-    float outer_angle_cos_{};
+    float cos_inner_angle_{};
+    float cos_outer_angle_{};
 
   public:
     SpotLight(const glm::vec3 &position,
@@ -55,9 +55,9 @@ class SpotLight : public PointLight {
               const glm::vec3 &attenuations)
         : PointLight(position, intensity, attenuations),
           direction_(glm::normalize(direction)),
-          inner_angle_cos_(std::cos(inner_angle)),
-          outer_angle_cos_(std::cos(outer_angle)) {
-        assert(inner_angle_cos_ - outer_angle_cos_ > 1e-6f);
+          cos_inner_angle_(std::cos(inner_angle)),
+          cos_outer_angle_(std::cos(outer_angle)) {
+        assert(cos_inner_angle_ - cos_outer_angle_ > 1e-6f);
     }
 
     Color get_radiance(const glm::vec3 &p, glm::vec3 &s) const override;

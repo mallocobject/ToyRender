@@ -5,12 +5,12 @@
 #include "scene_object.h"
 #include <cmath>
 
-Sphere::Sphere(SceneObject *parent, float radius)
+Sphere::Sphere(SceneObject &parent, float radius)
     : Primitive(parent), radius_(radius) {
 }
 
 bool Sphere::intersect(const Ray &ray, Intersection &isect) const {
-    Ray r = parent_->get_world2obj() * ray;
+    Ray r = parent_.get_world2obj() * ray;
 
     float A = glm::dot(r.d, r.d);
     float B = 2.f * glm::dot(r.o, r.d);
@@ -38,8 +38,8 @@ bool Sphere::intersect(const Ray &ray, Intersection &isect) const {
     glm::vec3 p = r.o + t * r.d;
     glm::vec3 n = glm::normalize(p);
     isect.t = t;
-    isect.postion = parent_->get_obj2world() * glm::vec4{p, 1.f};
-    isect.normal = glm::normalize(parent_->get_obj2world() * glm::vec4{n, 0.f});
+    isect.postion = parent_.get_obj2world() * glm::vec4{p, 1.f};
+    isect.normal = glm::normalize(parent_.get_obj2world() * glm::vec4{n, 0.f});
 
     return true;
 }

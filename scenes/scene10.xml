@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene version="1.0">
+    <!-- 相机更靠近盒子，让金属球在画面里更大 -->
+    <camera position="0,0,1.2" target="0,0,5" up="0,1,0" fov="60" near="0.1" far="1000"/>
+
+    <materials>
+        <!-- 环境漫反射材质：给金属球提供大面积反射内容 -->
+        <material name="white_wall" type="lambert" albedo="0.75,0.75,0.75"/>
+        <material name="red_wall" type="lambert" albedo="0.65,0.05,0.05"/>
+        <material name="green_wall" type="lambert" albedo="0.12,0.45,0.12"/>
+
+        <!-- 天花板亮板，金属球能反射出清晰的亮块 -->
+        <material name="light_panel" type="lambert" albedo="0.95,0.95,0.95"/>
+        <!-- 深灰色背景板：让金属反射有明显明暗对比 -->
+        <material name="backdrop_gray" type="lambert" albedo="0.28,0.28,0.28"/>
+
+        <!-- 金和铜两种强金属材质 -->
+        <material name="gold_metal" type="conductor_specular"
+                  eta="0.143,0.375,1.442"
+                  absorption="3.983,2.380,1.596"
+                  reflectionColor="1,1,1"/>
+
+        <material name="copper_metal" type="conductor_specular"
+                  eta="0.271,0.677,1.428"
+                  absorption="3.609,2.739,2.092"
+                  reflectionColor="1,1,1"/>
+    </materials>
+
+    <!-- 提高光强，让环境和反射内容足够亮 -->
+    <lights>
+        <light type="point"
+               position="0,1.55,5.7"
+               color="1.62,1.55,1.44"
+               attenuation="0,0,1"/>
+
+        <light type="spot"
+               position="-1.1,1.75,5.4"
+               direction="1.0,-2.0,1.5"
+               color="0.82,0.78,0.72"
+               innerAngle="35"
+               outerAngle="60"
+               attenuation="0,0,1"/>
+    </lights>
+
+    <objects>
+        <!-- 白色地板/后墙 -->
+        <object name="white_walls" material="white_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,-2.05,9" v2="2.75,-2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,-2.05,5"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,5" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,9" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="-2.75,2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="2.75,2.05,9" v2="2.75,-2.05,9"/>
+        </object>
+
+        <!-- 红墙/绿墙 -->
+        <object name="red_wall" material="red_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,5" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,9" v2="-2.75,-2.05,9"/>
+        </object>
+
+        <object name="green_wall" material="green_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="2.75,-2.05,5" v1="2.75,2.05,9" v2="2.75,2.05,5"/>
+        </object>
+
+        <!-- 天花板亮板：给金属反射提供高强度矩形亮块 -->
+        <object name="ceiling_light_panel" material="light_panel"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-1.25,1.90,5.9" v1="1.25,1.90,5.9" v2="1.25,1.90,7.7"/>
+            <triangle v0="-1.25,1.90,5.9" v1="1.25,1.90,7.7" v2="-1.25,1.90,7.7"/>
+        </object>
+
+        <!-- 相机后方的大面积深灰背景板 -->
+        <object name="backdrop" material="backdrop_gray"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-8,-6,0" v1="8,-6,0" v2="8,6,0"/>
+            <triangle v0="-8,-6,0" v1="8,6,0" v2="-8,6,0"/>
+        </object>
+
+        <!-- 金色球：左前方，较大 -->
+        <object name="sphere_gold" material="gold_metal"
+                position="-1.15,-1.15,6.35" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.90"/>
+        </object>
+
+        <!-- 铜色球：右后方，较小 -->
+        <object name="sphere_copper" material="copper_metal"
+                position="1.25,-1.30,7.45" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.75"/>
+        </object>
+    </objects>
+</scene>

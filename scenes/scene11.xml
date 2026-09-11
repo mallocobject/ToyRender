@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene version="1.0">
+    <!-- 相机靠近盒口 -->
+    <camera position="0,0,1.5" target="0,0,5" up="0,1,0" fov="60" near="0.1" far="1000"/>
+
+    <materials>
+        <!-- 康奈尔盒环境漫反射材质 -->
+        <material name="white_wall" type="lambert" albedo="0.75,0.75,0.75"/>
+        <material name="red_wall" type="lambert" albedo="0.65,0.05,0.05"/>
+        <material name="green_wall" type="lambert" albedo="0.12,0.45,0.12"/>
+
+        <!-- 相机后方背景板，给绝缘体镜面提供反射环境 -->
+        <material name="backdrop_gray" type="lambert" albedo="0.55,0.55,0.55"/>
+
+        <!-- 绝缘体镜面材质：透明玻璃 -->
+        <material name="glass_clear" type="dielectric"
+                  eta="1.50"
+                  transmission_color="0.90,0.95,1.00"
+                  reflection_color="1,1,1"/>
+
+        <!-- 绝缘体镜面材质：淡蓝色玻璃 -->
+        <material name="glass_blue" type="dielectric"
+                  eta="1.45"
+                  transmission_color="0.55,0.75,1.00"
+                  reflection_color="1,1,1"/>
+    </materials>
+
+    <!-- 提高光强，让盒内的漫反射环境足够亮，玻璃才能折射出内容 -->
+    <lights>
+        <light type="point"
+               position="0,1.55,5.7"
+               color="1.80,1.72,1.60"
+               attenuation="0,0,1"/>
+
+        <light type="spot"
+               position="-1.1,1.75,5.4"
+               direction="1.0,-2.0,1.5"
+               color="0.90,0.86,0.80"
+               innerAngle="35"
+               outerAngle="60"
+               attenuation="0,0,1"/>
+    </lights>
+
+    <objects>
+        <!-- 地板/天花板/后墙 -->
+        <object name="white_walls" material="white_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,-2.05,9" v2="2.75,-2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,-2.05,5"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,5" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,9" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="-2.75,2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="2.75,2.05,9" v2="2.75,-2.05,9"/>
+        </object>
+
+        <!-- 红墙/绿墙 -->
+        <object name="red_wall" material="red_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,5" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,9" v2="-2.75,-2.05,9"/>
+        </object>
+
+        <object name="green_wall" material="green_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="2.75,-2.05,5" v1="2.75,2.05,9" v2="2.75,2.05,5"/>
+        </object>
+
+        <!-- 相机后方背景板 -->
+        <object name="backdrop" material="backdrop_gray"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-8,-6,0" v1="8,-6,0" v2="8,6,0"/>
+            <triangle v0="-8,-6,0" v1="8,6,0" v2="-8,6,0"/>
+        </object>
+
+        <!-- 透明玻璃球：左前方，较大 -->
+        <object name="sphere_glass_clear" material="glass_clear"
+                position="-1.10,-1.15,6.45" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.90"/>
+        </object>
+
+        <!-- 淡蓝色玻璃球：右后方，稍小 -->
+        <object name="sphere_glass_blue" material="glass_blue"
+                position="1.20,-1.30,7.55" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.75"/>
+        </object>
+    </objects>
+</scene>

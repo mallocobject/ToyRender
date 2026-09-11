@@ -9,6 +9,6 @@ class Disk : public Primitive {
     float radius_{0.f};
 
   public:
-    Disk(SceneObject *parent, float radius);
+    Disk(SceneObject &parent, float radius);
     bool intersect(const Ray &ray, Intersection &isect) const override;
 };

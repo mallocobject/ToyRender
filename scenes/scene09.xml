@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene version="1.0">
+    <camera position="0,0,1.5" target="0,0,5" up="0,1,0" fov="60" near="0.1" far="1000"/>
+
+    <materials>
+        <!-- 白色/彩色漫反射墙面，为镜面球提供可反射的环境 -->
+        <material name="white_wall" type="lambert" albedo="0.75,0.75,0.75"/>
+        <material name="red_wall" type="lambert" albedo="0.65,0.05,0.05"/>
+        <material name="green_wall" type="lambert" albedo="0.12,0.45,0.12"/>
+
+        <!-- 两种不同的金属镜面材质：金色与银色 -->
+        <material name="gold_metal" type="conductor_specular"
+                  eta="0.143,0.375,1.442"
+                  absorption="3.983,2.380,1.596"
+                  reflectionColor="1,1,1"/>
+
+        <material name="silver_metal" type="conductor_specular"
+                  eta="0.155,0.116,0.138"
+                  absorption="4.42,3.983,4.25"
+                  reflectionColor="1,1,1"/>
+    </materials>
+
+    <!-- 强调点光源，同时减弱聚光灯，保持整体不过曝 -->
+    <lights>
+        <light type="point"
+               position="0,1.8,5.3"
+               color="1.82,1.74,1.64"
+               attenuation="0,0,1"/>
+
+        <light type="spot"
+               position="-1.2,1.8,5.6"
+               direction="1.2,-2.3,1.9"
+               color="0.60,0.57,0.54"
+               innerAngle="30"
+               outerAngle="55"
+               attenuation="0,0,1"/>
+    </lights>
+
+    <objects>
+        <!-- 地板、天花板、后墙 -->
+        <object name="white_walls" material="white_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,-2.05,9" v2="2.75,-2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,-2.05,5"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,5" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,2.05,5" v1="2.75,2.05,9" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="-2.75,2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,9" v1="2.75,2.05,9" v2="2.75,-2.05,9"/>
+        </object>
+
+        <!-- 红墙 -->
+        <object name="red_wall" material="red_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,5" v2="-2.75,2.05,9"/>
+            <triangle v0="-2.75,-2.05,5" v1="-2.75,2.05,9" v2="-2.75,-2.05,9"/>
+        </object>
+
+        <!-- 绿墙 -->
+        <object name="green_wall" material="green_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="2.75,-2.05,5" v1="2.75,-2.05,9" v2="2.75,2.05,9"/>
+            <triangle v0="2.75,-2.05,5" v1="2.75,2.05,9" v2="2.75,2.05,5"/>
+        </object>
+
+        <!-- 金色金属球：左前方，尺寸稍大 -->
+        <object name="sphere_gold" material="gold_metal"
+                position="-1.15,-1.15,6.5" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.90"/>
+        </object>
+
+        <!-- 银色金属球：右后方，尺寸稍小 -->
+        <object name="sphere_silver" material="silver_metal"
+                position="1.25,-1.35,7.8" rotation="0,0,0" scale="1,1,1">
+            <sphere radius="0.70"/>
+        </object>
+
+        <!-- 相机后方的白色背景板：用于给金属球提供可反射的明亮环境 -->
+        <!-- <object name="backdrop" material="white_wall"
+                position="0,0,0" rotation="0,0,0" scale="1,1,1">
+            <triangle v0="-8,-6,0" v1="8,-6,0" v2="8,6,0"/>
+            <triangle v0="-8,-6,0" v1="8,6,0" v2="-8,6,0"/>
+        </object> -->
+    </objects>
+</scene>

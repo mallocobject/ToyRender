@@ -282,19 +282,105 @@ Color parse_material_albedo(tinyxml2::XMLElement *element) {
 std::shared_ptr<Material>
 parse_material_definition(tinyxml2::XMLElement *element, Scene *scene) {
     const char *name_attribute = first_attribute(element, {"name", "id"});
-    const Color albedo = parse_material_albedo(element);
+    const char *type_attribute = first_attribute(element, {"type", "model"});
 
-    // 具名材质先查重，然后放进 Scene 的材质表，便于对象通过名称引用。
+    std::string type = "lambert";
+    if (type_attribute != nullptr) {
+        type = normalize_token(type_attribute);
+    }
+
+    std::string name;
     if (name_attribute != nullptr && name_attribute[0] != '\0') {
-        std::string name(name_attribute);
+        name = name_attribute;
         if (auto existing = scene->get_materials(name)) {
             return existing;
         }
+    }
 
+    const bool is_dielectric = type == "dielectric" ||
+                               type == "dielectricspecular" ||
+                               type == "glass" || type == "insulator";
+    if (is_dielectric) {
+        const float eta_attribute = parse_float(
+            first_attribute(element,
+                            {"eta", "ior", "indexOfRefraction",
+                             "index_of_refraction"}),
+            1.5f);
+        const float eta = eta_attribute > 0.f ? eta_attribute : 1.5f;
+
+        const Color transmission_color = parse_vec3(
+            first_attribute(element,
+                            {"transmissionColor",
+                             "transmission_color",
+                             "transmission",
+                             "color",
+                             "colour",
+                             "tint"}),
+            Color{1.f});
+        const Color reflection_tint = parse_vec3(
+            first_attribute(element,
+                            {"reflectionColor",
+                             "reflection_color",
+                             "reflectionTint",
+                             "reflection_tint",
+                             "reflectance",
+                             "reflectivity"}),
+            Color{1.f});
+
+        if (!name.empty()) {
+            return scene->create_material<DielectricSpeculerMaterial>(
+                name, eta, transmission_color, reflection_tint);
+        }
+
+        return std::make_shared<DielectricSpeculerMaterial>(
+            eta, transmission_color, reflection_tint);
+    }
+
+    const bool is_conductor = type == "conductor" ||
+                              type == "conductorspecular" ||
+                              type == "metal" || type == "specular" ||
+                              type == "mirror";
+    if (is_conductor) {
+        const Color eta = parse_vec3(
+            first_attribute(element,
+                            {"eta", "ior", "indexOfRefraction",
+                             "index_of_refraction"}),
+            Color{0.f});
+        const Color absorption = parse_vec3(
+            first_attribute(element,
+                            {"absorption",
+                             "k",
+                             "absorptionCoeff",
+                             "absorptionCoefficient",
+                             "absorption_coefficient",
+                             "extinction"}),
+            Color{0.f});
+        const Color reflection_color = parse_vec3(
+            first_attribute(element,
+                            {"reflectionColor",
+                             "reflection_color",
+                             "reflectance",
+                             "reflectivity",
+                             "tint",
+                             "color",
+                             "colour",
+                             "albedo"}),
+            Color{1.f});
+
+        if (!name.empty()) {
+            return scene->create_material<ConductorSpecularMaterial>(
+                name, eta, absorption, reflection_color);
+        }
+
+        return std::make_shared<ConductorSpecularMaterial>(
+            eta, absorption, reflection_color);
+    }
+
+    const Color albedo = parse_material_albedo(element);
+    if (!name.empty()) {
         return scene->create_material<LambertMaterial>(name, albedo);
     }
 
-    // 未命名的行内材质只给当前对象使用，不放进材质表。
     return std::make_shared<LambertMaterial>(albedo);
 }
 

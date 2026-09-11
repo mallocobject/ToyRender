@@ -1,14 +1,13 @@
 #pragma once
 
 #include "ray.h"
+#include "scene.h"
 #include "utils.h"
 #include <atomic>
 #include <cstdint>
 #include <glm/vec3.hpp>
 #include <memory>
 #include <string>
-
-class Scene;
 
 class Renderer {
   private:
@@ -18,7 +17,7 @@ class Renderer {
     int max_depth_{10};
     int min_depth_{3};
 
-    uint32_t *buffer_{nullptr};
+    std::unique_ptr<uint32_t[]> buffer_{};
     std::atomic<int> current_row_pixel_index_{0};
 
     std::unique_ptr<Scene> scene_;
@@ -31,7 +30,7 @@ class Renderer {
              int max_depth = 10,
              const std::string &scene_file = "scenes/scene02.xml");
 
-    ~Renderer();
+    ~Renderer() = default;
 
     void run();
 

@@ -22,10 +22,10 @@ class SceneObject;
 
 class Primitive {
   protected:
-    SceneObject *parent_{nullptr};
+    SceneObject &parent_;
 
   public:
-    Primitive(SceneObject *parent) : parent_(parent) {
+    Primitive(SceneObject &parent) : parent_(parent) {
     }
 
     virtual ~Primitive() = default;

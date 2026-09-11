@@ -5,14 +5,14 @@
 #include "scene_object.h"
 #include <cmath>
 
-Triangle::Triangle(SceneObject *parent,
+Triangle::Triangle(SceneObject &parent,
                    const glm::vec3 &v0,
                    const glm::vec3 &v1,
                    const glm::vec3 &v2)
     : Primitive(parent) {
-    vertices_[0] = parent_->get_obj2world() * glm::vec4{v0, 1.f};
-    vertices_[1] = parent_->get_obj2world() * glm::vec4{v1, 1.f};
-    vertices_[2] = parent->get_obj2world() * glm::vec4{v2, 1.f};
+    vertices_[0] = parent_.get_obj2world() * glm::vec4{v0, 1.f};
+    vertices_[1] = parent_.get_obj2world() * glm::vec4{v1, 1.f};
+    vertices_[2] = parent_.get_obj2world() * glm::vec4{v2, 1.f};
 
     auto edge1 = vertices_[1] - vertices_[0];
     auto edge2 = vertices_[2] - vertices_[0];

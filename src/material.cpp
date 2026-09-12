@@ -21,13 +21,14 @@ Color LambertMaterial::brdf(const glm::vec3 &, const glm::vec3 &) const {
 
 std::optional<MaterialSample>
 LambertMaterial::sample_reflection(const glm::vec3 &) const {
-    // 余弦加权采样：
-    // pdf(wi) = cosθ / π
-    // weight  = f * cosθ / pdf
-    //         = (albedo / π) * cosθ / (cosθ / π)
-    //         = albedo
-    return MaterialSample{.wi_local = sample_cosine_hemisphere(),
-                          .weight = albedo_};
+    // 余弦加权半球采样：pdf(w) = cos(theta) / π
+    const glm::vec3 wi_local = cosine_sample_hemisphere();
+    const float cos_theta = std::max(wi_local.z, 0.f);
+
+    return MaterialSample{
+        .wi_local = wi_local,
+        .pdf = std::max(cos_theta * INV_PI, 1e-6f),
+    };
 }
 
 Color ConductorSpecularMaterial::fresnel(float cos_theta) const {
@@ -64,16 +65,10 @@ ConductorSpecularMaterial::sample_reflection(const glm::vec3 &wo_local) const {
     // 完美镜面反射，反射概率为 1。
     const glm::vec3 wi_local{-wo_local.x, -wo_local.y, wo_local.z};
 
-    // delta BRDF 的估计权重 = f * cosθ / pdf
-    // pdf = 1，f = Fr * reflection_color / cosθ
-    // => weight = Fr * reflection_color
-    const float cos_theta = std::max(std::fabs(wi_local.z), 1e-6f);
-    const Color weight = fresnel(cos_theta) * reflection_tint_;
-
-    return MaterialSample{.wi_local = wi_local, .weight = weight};
+    return MaterialSample{.wi_local = wi_local, .pdf = 1.f};
 }
 
-float DielectricSpeculerMaterial::fresnel(float eta_i,
+float DielectricSpecularMaterial::fresnel(float eta_i,
                                           float eta_t,
                                           float cos_i,
                                           float cos_t) const {
@@ -85,7 +80,7 @@ float DielectricSpeculerMaterial::fresnel(float eta_i,
     return 0.5f * (r1 * r1 + r2 * r2);
 }
 
-void DielectricSpeculerMaterial::select_eta(float direction_z,
+void DielectricSpecularMaterial::select_eta(float direction_z,
                                             float &eta_i,
                                             float &eta_t) const {
     // 局部 +Z 一侧视为外侧空气；local -Z 一侧视为内侧介质。
@@ -93,13 +88,13 @@ void DielectricSpeculerMaterial::select_eta(float direction_z,
     (direction_z > 0.f ? eta_t : eta_i) = eta_;
 }
 
-Color DielectricSpeculerMaterial::brdf(const glm::vec3 &wo,
+Color DielectricSpecularMaterial::brdf(const glm::vec3 &wo,
                                        const glm::vec3 &wi) const {
     // 完美镜面反射方向：wi = (-wo.x, -wo.y, wo.z)
-    // const glm::vec3 reflected{-wo.x, -wo.y, wo.z};
-    // if (!nearly_equal(wi, reflected, 1e-6f)) {
-    //     return Color{0.f};
-    // }
+    const glm::vec3 reflected{-wo.x, -wo.y, wo.z};
+    if (!nearly_equal(wi, reflected, 1e-6f)) {
+        return Color{0.f};
+    }
 
     // 反射不跨界面，入射侧和相机侧相同。
     float eta_i = 1.f;
@@ -114,59 +109,47 @@ Color DielectricSpeculerMaterial::brdf(const glm::vec3 &wo,
         Fr = fresnel(eta_i, eta_t, cos_i, cos_t);
     }
 
-    return Color{Fr} * reflection_tint_ / cos_i;
+    const Color reflectance = Color{Fr} * reflection_tint_;
+    return reflectance / cos_i;
 }
 
-Color DielectricSpeculerMaterial::btdf(const glm::vec3 &wt,
+Color DielectricSpecularMaterial::btdf(const glm::vec3 &wo,
                                        const glm::vec3 &wi) const {
-    // 实际光方向 wi：从表面指向光源。
-    // +Z 一侧为空气，-Z 一侧为介质。
+    // wo: 从表面指向相机；wi: 采样得到的光 incident 方向。
     float eta_i = 1.f;
     float eta_t = 1.f;
-    select_eta(wi.z, eta_i, eta_t);
+    select_eta(wo.z, eta_i, eta_t);
 
-    // auto expected_wt = compute_refract_vec(wi, eta_i, eta_t);
-    // if (!expected_wt) {
-    //     return Color{0.f};
-    // }
-
-    // if (!nearly_equal(wt, *expected_wt, 1e-6f)) {
-    //     return Color{0.f};
-    // }
-
-    const float cos_i = std::max(std::fabs(wi.z), 1e-6f);
-    const float cos_t = std::max(std::fabs(wt.z), 1e-6f);
-
-    const float Fr = fresnel(eta_i, eta_t, cos_i, cos_t);
-    const float eta_ratio = eta_t / eta_i;
-
-    return Color{1.f - Fr} * eta_ratio * eta_ratio * transmission_color_ /
-           cos_i;
-}
-
-std::optional<MaterialSample>
-DielectricSpeculerMaterial::sample_reflection(const glm::vec3 &wo_local) const {
-    const glm::vec3 wi_local{-wo_local.x, -wo_local.y, wo_local.z};
-
-    float eta_i = 1.f;
-    float eta_t = 1.f;
-    select_eta(wo_local.z, eta_i, eta_t);
-
-    const float cos_i = std::max(std::fabs(wo_local.z), 1e-6f);
-
-    // 默认按全反射处理；只有能折射时才用 Fresnel 修正反射率。
-    float Fr = 1.f;
-    if (auto wt_local = compute_refract_vec(wo_local, eta_i, eta_t)) {
-        const float cos_t = std::max(std::fabs(wt_local->z), 1e-6f);
-        Fr = fresnel(eta_i, eta_t, cos_i, cos_t);
+    // wi 必须是 wo 对应的折射方向。
+    auto expected_wi = compute_refract_vec(wo, eta_i, eta_t);
+    if (!expected_wi || !nearly_equal(wi, *expected_wi, 1e-6f)) {
+        return Color{0.f};
     }
 
-    return MaterialSample{.wi_local = wi_local,
-                          .weight = Color{Fr} * reflection_tint_};
+    const float cos_out = std::max(std::fabs(wo.z), 1e-6f);
+    const float cos_in = std::max(std::fabs(wi.z), 1e-6f);
+
+    // 实际光路与相机路径相反：eta_t -> eta_i。
+    // Fresnel 反射率具有互易性，这里传参顺序不影响数值。
+    const float Fr = fresnel(eta_t, eta_i, cos_in, cos_out);
+
+    // 反向相机路径的 radiance 传输因子：(eta_i / eta_t)^2
+    const float eta_ratio = eta_i / eta_t;
+
+    const Color branch =
+        Color{1.f - Fr} * eta_ratio * eta_ratio * transmission_color_;
+
+    return branch / cos_in;
 }
 
 std::optional<MaterialSample>
-DielectricSpeculerMaterial::sample_refraction(const glm::vec3 &wo_local) const {
+DielectricSpecularMaterial::sample_reflection(const glm::vec3 &wo_local) const {
+    const glm::vec3 wi_local{-wo_local.x, -wo_local.y, wo_local.z};
+    return MaterialSample{.wi_local = wi_local, .pdf = 1.f};
+}
+
+std::optional<MaterialSample>
+DielectricSpecularMaterial::sample_refraction(const glm::vec3 &wo_local) const {
     float eta_i = 1.f;
     float eta_t = 1.f;
     select_eta(wo_local.z, eta_i, eta_t);
@@ -176,16 +159,5 @@ DielectricSpeculerMaterial::sample_refraction(const glm::vec3 &wo_local) const {
         return std::nullopt; // 全反射，没有折射光
     }
 
-    const float cos_i = std::max(std::fabs(wo_local.z), 1e-6f);
-    const float cos_t = std::max(std::fabs(wi_local->z), 1e-6f);
-    const float Fr = fresnel(eta_i, eta_t, cos_i, cos_t);
-
-    // 这里 eta_i / eta_t 是“相机侧介质 / 折射后介质”。
-    // 因为 compute_refract_vec 是沿相机路径反向计算，
-    // radiance 传输因子应为 (eta_i / eta_t)^2。
-    const float eta_ratio = eta_i / eta_t;
-
-    return MaterialSample{.wi_local = *wi_local,
-                          .weight = Color{1.f - Fr} * eta_ratio * eta_ratio *
-                                    transmission_color_};
+    return MaterialSample{.wi_local = *wi_local, .pdf = 1.f};
 }

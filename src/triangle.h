@@ -17,4 +17,5 @@ class Triangle : public Primitive {
              const glm::vec3 &v2);
 
     bool intersect(const Ray &ray, Intersection &isect) const override;
+    PrimitiveSample sample() const override;
 };

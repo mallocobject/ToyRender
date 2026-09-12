@@ -3,6 +3,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/geometric.hpp"
 #include "intersection.h"
+#include "light.h"
 #include "material.h"
 #include "ray.h"
 #include "scene_loader.h"
@@ -124,7 +125,7 @@ void Renderer::run_render_thread() {
     }
 }
 
-Color Renderer::get_radiance(Ray &ray, int depth) const {
+Color Renderer::get_radiance(Ray &ray, int depth, bool pre_is_delta) const {
     if (depth >= max_depth_) {
         return Color{0.f};
     }
@@ -149,7 +150,6 @@ Color Renderer::get_radiance(Ray &ray, int depth) const {
     const std::shared_ptr<Material> &material = hit_object->get_material();
     const glm::vec3 wo = -glm::normalize(ray.d);
 
-    // 基本元素保证 normal 是真正的表面法线方向，因此不再翻向观察方向。
     const glm::vec3 normal = glm::normalize(isect.normal);
 
     const TangentFrame tangent_frame = build_tangent_frame(normal);
@@ -158,16 +158,21 @@ Color Renderer::get_radiance(Ray &ray, int depth) const {
 
     constexpr const float epsilon = 1e-4f;
 
-    if (material && !material->is_specularable()) { // directional lighting
+    if (material && !material->is_delta()) { // directional lighting
         for (auto &&light : scene_->get_lights()) {
-            glm::vec3 light_sample_position{0.f};
-            const Color L =
-                light->get_radiance(isect.postion, light_sample_position);
+            if (auto area = dynamic_cast<AreaLight *>(light.get())) {
+                if (area->get_scene_object() == hit_object) {
+                    continue; // 不采样自己
+                }
+            }
+
+            const LightSample ls = light->get_radiance(isect.postion);
+            const Color &L = ls.radiance;
             if (L.r == 0.f && L.g == 0.f && L.b == 0.f) {
                 continue;
             }
 
-            const glm::vec3 to_light = light_sample_position - isect.postion;
+            const glm::vec3 to_light = ls.s - isect.postion;
             const float light_distance = glm::length(to_light);
             if (light_distance <= epsilon) {
                 continue;
@@ -197,7 +202,7 @@ Color Renderer::get_radiance(Ray &ray, int depth) const {
             const glm::vec3 wi_local = to_local(wi, tangent_frame);
             const Color f =
                 material ? material->brdf(wo_local, wi_local) : Color{1.f};
-            Io += L * f * cos_theta;
+            Io += L * f * cos_theta / std::max(ls.pdf, 1e-6f);
         }
     }
 
@@ -205,11 +210,14 @@ Color Renderer::get_radiance(Ray &ray, int depth) const {
         // 由材质自己决定采样方向：
         // - Lambert：余弦加权半球采样
         // - ConductorSpecular：完美镜面反射
+
         // const std::optional<MaterialSample> sample =
         // material->sample(wo_local);
 
         if (auto sample = material->sample_reflection(wo_local)) {
-            // 局部采样方向 -> 世界空间，用于投射反弹射线
+            // 局部采样方向 -> 世界空间，用于投射反射射线
+            const glm::vec3 wi_local = sample->wi_local;
+            const float cos_theta = std::max(std::fabs(wi_local.z), 1e-6f);
             const glm::vec3 wi =
                 glm::normalize(to_world(sample->wi_local, tangent_frame));
 
@@ -218,14 +226,17 @@ Color Renderer::get_radiance(Ray &ray, int depth) const {
                 .d = wi,
                 .mint = epsilon,
             };
-            const Color L = get_radiance(bounce_ray, depth + 1);
+            const Color L =
+                get_radiance(bounce_ray, depth + 1, material->is_delta());
 
-            // sample->weight 已经是 f * cosθ / pdf
-            Io += L * sample->weight;
+            const Color f = material->brdf(wo_local, wi_local);
+            Io += f * L * cos_theta / std::max(sample->pdf, 1e-6f);
         }
 
         if (auto sample = material->sample_refraction(wo_local)) {
-            // 局部采样方向 -> 世界空间，用于投射反弹射线
+            // 局部采样方向 -> 世界空间，用于投射折射射线
+            const glm::vec3 wi_local = sample->wi_local;
+            const float cos_theta = std::max(std::fabs(wi_local.z), 1e-6f);
             const glm::vec3 wi =
                 glm::normalize(to_world(sample->wi_local, tangent_frame));
 
@@ -234,10 +245,17 @@ Color Renderer::get_radiance(Ray &ray, int depth) const {
                 .d = wi,
                 .mint = epsilon,
             };
-            const Color L = get_radiance(bounce_ray, depth + 1);
+            const Color L =
+                get_radiance(bounce_ray, depth + 1, material->is_delta());
 
-            // sample->weight 已经是 f * cosθ / pdf
-            Io += L * sample->weight;
+            const Color f = material->btdf(wo_local, wi_local);
+            Io += f * L * cos_theta / std::max(sample->pdf, 1e-6f);
+        }
+
+        // 间接光源且不是镜面材料就会算重
+        if (depth == 0 || pre_is_delta) {
+            const Color Le = material->get_emissive();
+            Io += Le;
         }
     }
 

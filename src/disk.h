@@ -11,4 +11,5 @@ class Disk : public Primitive {
   public:
     Disk(SceneObject &parent, float radius);
     bool intersect(const Ray &ray, Intersection &isect) const override;
+    PrimitiveSample sample() const override;
 };

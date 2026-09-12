@@ -1,9 +1,9 @@
 #include "scene_loader.h"
 
 #include "disk.h"
-#include "material.h"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/trigonometric.hpp"
+#include "material.h"
 #include "sphere.h"
 #include "tinyxml2.h"
 #include "triangle.h"
@@ -143,8 +143,8 @@ glm::vec3 parse_light_position(tinyxml2::XMLElement *element,
 }
 
 glm::vec3 parse_light_direction(tinyxml2::XMLElement *element,
-                                const glm::vec3 &fallback =
-                                    glm::vec3{0.f, -1.f, 0.f}) {
+                                const glm::vec3 &fallback = glm::vec3{
+                                    0.f, -1.f, 0.f}) {
     return parse_vec3(
         first_attribute(element, {"direction", "dir", "vector", "axis"}),
         fallback);
@@ -152,11 +152,9 @@ glm::vec3 parse_light_direction(tinyxml2::XMLElement *element,
 
 glm::vec3 parse_light_attenuation(tinyxml2::XMLElement *element) {
     return parse_vec3(
-        first_attribute(element,
-                        {"attenuation",
-                         "attenuations",
-                         "falloff",
-                         "attenuationFactors"}),
+        first_attribute(
+            element,
+            {"attenuation", "attenuations", "falloff", "attenuationFactors"}),
         glm::vec3{0.f, 0.f, 1.f});
 }
 
@@ -190,12 +188,7 @@ void add_light_to_scene(tinyxml2::XMLElement *element, Scene *scene) {
         const glm::vec3 position = parse_light_position(element);
         const Color intensity = parse_light_color(
             element,
-            {"color",
-             "intensity",
-             "radiance",
-             "colour",
-             "emission",
-             "power"});
+            {"color", "intensity", "radiance", "colour", "emission", "power"});
         const glm::vec3 attenuation = parse_light_attenuation(element);
         scene->create_light<PointLight>(position, intensity, attenuation);
     } else if (type == "spot" || type == "spotlight") {
@@ -203,33 +196,28 @@ void add_light_to_scene(tinyxml2::XMLElement *element, Scene *scene) {
         const glm::vec3 direction = parse_light_direction(element);
         const Color intensity = parse_light_color(
             element,
-            {"color",
-             "intensity",
-             "radiance",
-             "colour",
-             "emission",
-             "power"});
+            {"color", "intensity", "radiance", "colour", "emission", "power"});
         const glm::vec3 attenuation = parse_light_attenuation(element);
 
         // XML 中的聚光灯角度使用角度制，SpotLight 构造函数使用弧度制。
-        float inner_angle_degrees = parse_float(
-            first_attribute(element,
-                            {"innerAngle",
-                             "inner_angle",
-                             "innerConeAngle",
-                             "innerCone",
-                             "inner",
-                             "angle"}),
-            20.f);
-        float outer_angle_degrees = parse_float(
-            first_attribute(element,
-                            {"outerAngle",
-                             "outer_angle",
-                             "outerConeAngle",
-                             "outerCone",
-                             "outer",
-                             "angle"}),
-            30.f);
+        float inner_angle_degrees =
+            parse_float(first_attribute(element,
+                                        {"innerAngle",
+                                         "inner_angle",
+                                         "innerConeAngle",
+                                         "innerCone",
+                                         "inner",
+                                         "angle"}),
+                        20.f);
+        float outer_angle_degrees =
+            parse_float(first_attribute(element,
+                                        {"outerAngle",
+                                         "outer_angle",
+                                         "outerConeAngle",
+                                         "outerCone",
+                                         "outer",
+                                         "angle"}),
+                        30.f);
 
         if (inner_angle_degrees >= outer_angle_degrees) {
             outer_angle_degrees = inner_angle_degrees + 1.f;
@@ -268,15 +256,45 @@ bool is_object_element(tinyxml2::XMLElement *element) {
 }
 
 Color parse_material_albedo(tinyxml2::XMLElement *element) {
-    return parse_vec3(
-        first_attribute(element,
-                        {"albedo",
-                         "color",
-                         "colour",
-                         "diffuse",
-                         "baseColor",
-                         "base_color"}),
-        Color{0.8f});
+    return parse_vec3(first_attribute(element,
+                                      {"albedo",
+                                       "color",
+                                       "colour",
+                                       "diffuse",
+                                       "baseColor",
+                                       "base_color"}),
+                      Color{0.8f});
+}
+
+Color parse_material_emissive(tinyxml2::XMLElement *element) {
+    return parse_vec3(first_attribute(element,
+                                      {"emissive",
+                                       "emission",
+                                       "emissiveColor",
+                                       "emissive_color",
+                                       "emit"}),
+                      Color{0.f});
+}
+
+bool attribute_is_on(const char *value) {
+    if (value == nullptr) {
+        return false;
+    }
+
+    const std::string normalized = normalize_token(value);
+    return normalized == "true" || normalized == "1" || normalized == "yes" ||
+           normalized == "on" || normalized == "area";
+}
+
+bool is_area_light_object(tinyxml2::XMLElement *element) {
+    return attribute_is_on(first_attribute(element,
+                                           {"areaLight",
+                                            "area_light",
+                                            "area",
+                                            "lightType",
+                                            "light_type",
+                                            "light",
+                                            "type"}));
 }
 
 std::shared_ptr<Material>
@@ -302,90 +320,93 @@ parse_material_definition(tinyxml2::XMLElement *element, Scene *scene) {
                                type == "glass" || type == "insulator";
     if (is_dielectric) {
         const float eta_attribute = parse_float(
-            first_attribute(element,
-                            {"eta", "ior", "indexOfRefraction",
-                             "index_of_refraction"}),
+            first_attribute(
+                element,
+                {"eta", "ior", "indexOfRefraction", "index_of_refraction"}),
             1.5f);
         const float eta = eta_attribute > 0.f ? eta_attribute : 1.5f;
 
-        const Color transmission_color = parse_vec3(
-            first_attribute(element,
-                            {"transmissionColor",
-                             "transmission_color",
-                             "transmission",
-                             "color",
-                             "colour",
-                             "tint"}),
-            Color{1.f});
-        const Color reflection_tint = parse_vec3(
-            first_attribute(element,
-                            {"reflectionColor",
-                             "reflection_color",
-                             "reflectionTint",
-                             "reflection_tint",
-                             "reflectance",
-                             "reflectivity"}),
-            Color{1.f});
+        const Color transmission_color =
+            parse_vec3(first_attribute(element,
+                                       {"transmissionColor",
+                                        "transmission_color",
+                                        "transmission",
+                                        "color",
+                                        "colour",
+                                        "tint"}),
+                       Color{1.f});
+        const Color reflection_tint =
+            parse_vec3(first_attribute(element,
+                                       {"reflectionColor",
+                                        "reflection_color",
+                                        "reflectionTint",
+                                        "reflection_tint",
+                                        "reflectance",
+                                        "reflectivity"}),
+                       Color{1.f});
+        const Color emissive = parse_material_emissive(element);
 
         if (!name.empty()) {
-            return scene->create_material<DielectricSpeculerMaterial>(
-                name, eta, transmission_color, reflection_tint);
+            return scene->create_material<DielectricSpecularMaterial>(
+                name, eta, transmission_color, reflection_tint, emissive);
         }
 
-        return std::make_shared<DielectricSpeculerMaterial>(
-            eta, transmission_color, reflection_tint);
+        return std::make_shared<DielectricSpecularMaterial>(
+            eta, transmission_color, reflection_tint, emissive);
     }
 
     const bool is_conductor = type == "conductor" ||
-                              type == "conductorspecular" ||
-                              type == "metal" || type == "specular" ||
-                              type == "mirror";
+                              type == "conductorspecular" || type == "metal" ||
+                              type == "specular" || type == "mirror";
     if (is_conductor) {
         const Color eta = parse_vec3(
-            first_attribute(element,
-                            {"eta", "ior", "indexOfRefraction",
-                             "index_of_refraction"}),
+            first_attribute(
+                element,
+                {"eta", "ior", "indexOfRefraction", "index_of_refraction"}),
             Color{0.f});
-        const Color absorption = parse_vec3(
-            first_attribute(element,
-                            {"absorption",
-                             "k",
-                             "absorptionCoeff",
-                             "absorptionCoefficient",
-                             "absorption_coefficient",
-                             "extinction"}),
-            Color{0.f});
-        const Color reflection_color = parse_vec3(
-            first_attribute(element,
-                            {"reflectionColor",
-                             "reflection_color",
-                             "reflectance",
-                             "reflectivity",
-                             "tint",
-                             "color",
-                             "colour",
-                             "albedo"}),
-            Color{1.f});
+        const Color absorption =
+            parse_vec3(first_attribute(element,
+                                       {"absorption",
+                                        "k",
+                                        "absorptionCoeff",
+                                        "absorptionCoefficient",
+                                        "absorption_coefficient",
+                                        "extinction"}),
+                       Color{0.f});
+        const Color reflection_color =
+            parse_vec3(first_attribute(element,
+                                       {"reflectionColor",
+                                        "reflection_color",
+                                        "reflectance",
+                                        "reflectivity",
+                                        "tint",
+                                        "color",
+                                        "colour",
+                                        "albedo"}),
+                       Color{1.f});
+        const Color emissive = parse_material_emissive(element);
 
         if (!name.empty()) {
             return scene->create_material<ConductorSpecularMaterial>(
-                name, eta, absorption, reflection_color);
+                name, eta, absorption, reflection_color, emissive);
         }
 
         return std::make_shared<ConductorSpecularMaterial>(
-            eta, absorption, reflection_color);
+            eta, absorption, reflection_color, emissive);
     }
 
     const Color albedo = parse_material_albedo(element);
+    const Color emissive = parse_material_emissive(element);
+
     if (!name.empty()) {
-        return scene->create_material<LambertMaterial>(name, albedo);
+        return scene->create_material<LambertMaterial>(name, albedo, emissive);
     }
 
-    return std::make_shared<LambertMaterial>(albedo);
+    return std::make_shared<LambertMaterial>(albedo, emissive);
 }
 
-std::shared_ptr<Material> parse_scene_object_material(
-    tinyxml2::XMLElement *element, Scene *scene) {
+std::shared_ptr<Material>
+parse_scene_object_material(tinyxml2::XMLElement *element, Scene *scene) {
     // <object material="red">...</object> 或 <object materialRef="red">
     if (const char *reference = first_attribute(element,
                                                 {"material",
@@ -426,9 +447,8 @@ glm::vec3 parse_scene_object_position(tinyxml2::XMLElement *element) {
 
 glm::vec3 parse_scene_object_rotation(tinyxml2::XMLElement *element) {
     // XML 中的 rotation/euler 使用角度制，SceneObject 内部使用弧度制。
-    const glm::vec3 rotation_degrees =
-        parse_vec3(first_attribute(element, {"rotation", "euler"}),
-                   glm::vec3{0.f});
+    const glm::vec3 rotation_degrees = parse_vec3(
+        first_attribute(element, {"rotation", "euler"}), glm::vec3{0.f});
     return glm::radians(rotation_degrees);
 }
 
@@ -455,6 +475,10 @@ void add_scene_object_element(tinyxml2::XMLElement *element, Scene *scene) {
         }
 
         add_primitive_to_scene_object(primitive, scene_object.get());
+    }
+
+    if (is_area_light_object(element)) {
+        scene->create_light<AreaLight>(scene_object);
     }
 }
 
@@ -574,8 +598,7 @@ SceneLoader::load_scene_from_xml(const std::string &scene_file, int w, int h) {
         auto scene_object =
             scene->create_scene_object(position, rotation, scale);
 
-        if (auto material =
-                parse_scene_object_material(element, scene.get())) {
+        if (auto material = parse_scene_object_material(element, scene.get())) {
             scene_object->set_material(material);
         }
 

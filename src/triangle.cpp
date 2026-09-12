@@ -1,8 +1,10 @@
 #include "triangle.h"
+#include "glm/ext/quaternion_geometric.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include "primitive.h"
 #include "scene_object.h"
+#include "utils.h"
 #include <cmath>
 
 Triangle::Triangle(SceneObject &parent,
@@ -18,6 +20,7 @@ Triangle::Triangle(SceneObject &parent,
     auto edge2 = vertices_[2] - vertices_[0];
 
     normal_ = glm::normalize(glm::cross(edge1, edge2));
+    area_ = 0.5f * glm::length(glm::cross(edge1, edge2));
 }
 
 bool Triangle::intersect(const Ray &ray, Intersection &isect) const {
@@ -56,4 +59,12 @@ bool Triangle::intersect(const Ray &ray, Intersection &isect) const {
     isect.normal = normal_;
 
     return true;
+}
+
+PrimitiveSample Triangle::sample() const {
+    return PrimitiveSample{
+        .p = uniform_sample_triangle(vertices_[0], vertices_[1], vertices_[2]),
+        .normal = normal_,
+        .pdf = 1.f / area_,
+    };
 }

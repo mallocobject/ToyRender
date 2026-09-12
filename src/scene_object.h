@@ -55,4 +55,6 @@ class SceneObject {
     const std::shared_ptr<Material> &get_material() const {
         return material_;
     }
+
+    PrimitiveSample sample() const;
 };

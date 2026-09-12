@@ -1,13 +1,17 @@
 #include "disk.h"
+#include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
+#include "glm/geometric.hpp"
 #include "primitive.h"
 #include "scene_object.h"
+#include "utils.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
 
 Disk::Disk(SceneObject &parent, float radius)
     : Primitive(parent), radius_(radius) {
+    area_ = PI * radius * radius;
 }
 
 bool Disk::intersect(const Ray &ray, Intersection &isect) const {
@@ -35,4 +39,15 @@ bool Disk::intersect(const Ray &ray, Intersection &isect) const {
         glm::normalize(parent_.get_obj2world() * glm::vec4{0.f, 0.f, 1.f, 0.f});
 
     return true;
+}
+
+PrimitiveSample Disk::sample() const {
+    const glm::vec3 p = parent_.get_obj2world() *
+                        glm::vec4{uniform_sample_disk(radius_), 0.f, 1.f};
+    return PrimitiveSample{
+        .p = p,
+        .normal = glm::normalize(parent_.get_obj2world() *
+                                 glm::vec4{0.f, 0.f, 1.f, 0.f}),
+        .pdf = 1.f / area_,
+    };
 }

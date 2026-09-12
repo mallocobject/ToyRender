@@ -8,12 +8,22 @@
 
 struct MaterialSample {
     glm::vec3 wi_local{};
-    Color weight{};
+    float pdf{1.f};
 };
 
 class Material {
+  protected:
+    Color emissive_{0.f};
+
   public:
+    Material(const Color &emissive = Color{0.f}) : emissive_(emissive) {
+    }
+
     virtual ~Material() = default;
+
+    const Color &get_emissive() const {
+        return emissive_;
+    }
 
     virtual Color brdf(const glm::vec3 &, const glm::vec3 &) const = 0;
 
@@ -21,17 +31,17 @@ class Material {
         return Color{0.f};
     }
 
-    // 在局部切线空间采样一个反射/散射方向，并返回 L * f * cos / pdf 中的权重。
+    // 在局部切线空间采样一个反射/散射方向，并返回 L * f * cos / pdf
+    // 中的权重。
     virtual std::optional<MaterialSample>
-    sample_reflection(const glm::vec3 &wo_local) const = 0;
+    sample_reflection(const glm::vec3 &) const = 0;
 
     virtual std::optional<MaterialSample>
-    sample_refraction(const glm::vec3 &wo_local) const {
-        (void)wo_local;
+    sample_refraction(const glm::vec3 &) const {
         return std::nullopt;
     }
 
-    virtual constexpr bool is_specularable() const {
+    virtual constexpr bool is_delta() const {
         return false;
     }
 
@@ -45,7 +55,8 @@ class LambertMaterial : public Material {
     glm::vec3 albedo_{};
 
   public:
-    LambertMaterial(const glm::vec3 &albedo) : albedo_(albedo) {
+    LambertMaterial(const glm::vec3 &albedo, const Color &emissive = Color{0.f})
+        : Material(emissive), albedo_(albedo) {
     }
 
     Color brdf(const glm::vec3 &wo, const glm::vec3 &wi) const override;
@@ -67,8 +78,9 @@ class ConductorSpecularMaterial : public Material {
   public:
     ConductorSpecularMaterial(const Color &eta,
                               const Color &absorption,
-                              const Color &reflection_tint)
-        : eta_(eta), absorption_(absorption),
+                              const Color &reflection_tint,
+                              const Color &emissive = Color{0.f})
+        : Material(emissive), eta_(eta), absorption_(absorption),
           reflection_tint_(reflection_tint) {
     }
 
@@ -89,7 +101,7 @@ class ConductorSpecularMaterial : public Material {
         return reflection_tint_;
     }
 
-    bool constexpr is_specularable() const override {
+    bool constexpr is_delta() const override {
         return true;
     }
 
@@ -97,23 +109,25 @@ class ConductorSpecularMaterial : public Material {
     Color fresnel(float cos_theta) const;
 };
 
-class DielectricSpeculerMaterial : public Material {
+class DielectricSpecularMaterial : public Material {
   private:
     float eta_{};
     Color transmission_color_{1.f};
     Color reflection_tint_{1.f};
 
   public:
-    DielectricSpeculerMaterial(float eta,
+    DielectricSpecularMaterial(float eta,
                                const Color &transmission_color,
-                               const Color &reflection_tint)
-        : eta_(eta), transmission_color_(transmission_color),
+                               const Color &reflection_tint,
+                               const Color &emissive = Color{0.f})
+        : Material(emissive), eta_(eta),
+          transmission_color_(transmission_color),
           reflection_tint_(reflection_tint) {
         assert(eta > 0);
     }
 
     Color brdf(const glm::vec3 &wo, const glm::vec3 &wi) const override;
-    Color btdf(const glm::vec3 &wt, const glm::vec3 &wi) const override;
+    Color btdf(const glm::vec3 &wo, const glm::vec3 &wi) const override;
 
     std::optional<MaterialSample>
     sample_reflection(const glm::vec3 &wo_local) const override;
@@ -121,7 +135,7 @@ class DielectricSpeculerMaterial : public Material {
     std::optional<MaterialSample>
     sample_refraction(const glm::vec3 &wo_local) const override;
 
-    bool constexpr is_specularable() const override {
+    bool constexpr is_delta() const override {
         return true;
     }
 

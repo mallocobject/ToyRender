@@ -1,12 +1,15 @@
 #include "sphere.h"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
+#include "glm/geometric.hpp"
 #include "primitive.h"
 #include "scene_object.h"
+#include "utils.h"
 #include <cmath>
 
 Sphere::Sphere(SceneObject &parent, float radius)
     : Primitive(parent), radius_(radius) {
+    area_ = 4.f * PI * radius * radius;
 }
 
 bool Sphere::intersect(const Ray &ray, Intersection &isect) const {
@@ -42,4 +45,14 @@ bool Sphere::intersect(const Ray &ray, Intersection &isect) const {
     isect.normal = glm::normalize(parent_.get_obj2world() * glm::vec4{n, 0.f});
 
     return true;
+}
+
+PrimitiveSample Sphere::sample() const {
+    const glm::vec3 p = parent_.get_obj2world() *
+                        glm::vec4{uniform_sample_sphere() * radius_, 1.f};
+    return PrimitiveSample{
+        .p = p,
+        .normal = glm::normalize(p),
+        .pdf = 1.f / area_,
+    };
 }

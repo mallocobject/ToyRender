@@ -9,23 +9,52 @@
 #include <cmath>
 #include <optional>
 #include <random>
+#include <type_traits>
 
 using Color = glm::vec3;
 
 inline constexpr const float PI = glm::pi<float>();
 inline constexpr const float INV_PI = 1.f / PI;
-inline constexpr const float PI_HALF = PI / 2;
-inline constexpr const float PI_DOUBLE = PI * 2;
-inline constexpr const float PI_SQUARE = PI * PI;
+inline constexpr const float HALF_PI = PI / 2.f;
+inline constexpr const float DOUBLE_PI = PI * 2.f;
+inline constexpr const float SQUARE_PI = PI * PI;
 
-inline float random_float(float a = 0.f, float b = 1.f) {
-    thread_local std::mt19937 rng{std::random_device{}()};
-    thread_local std::uniform_real_distribution<float> dist{0.f, 1.f};
+// template <typename T>
+// auto random_float(T a = 0.f, T b = 1.f) -> T {
+//     thread_local std::mt19937 rng{std::random_device{}()};
+//     thread_local std::uniform_real_distribution<float> dist{0.f, 1.f};
 
-    assert(b - a > 1e-6f);
+//     assert(b - a > 1e-6f);
 
-    return dist(rng) * (b - a) + a;
-}
+//     return dist(rng) * (b - a) + a;
+// }
+
+namespace details {
+
+template <typename T>
+concept Arithmetic = std::is_arithmetic_v<T> && !std::same_as<T, bool>;
+
+template <Arithmetic T>
+struct Random {
+    T operator()(T a = 0, T b = 1) const {
+        thread_local std::mt19937 rng{std::random_device{}()};
+
+        if constexpr (std::integral<T>) {
+            assert(a <= b);
+            std::uniform_int_distribution<T> dist(a, b);
+            return dist(rng);
+        } else {
+            assert(a < b);
+            thread_local std::uniform_real_distribution<T> dist{T{0}, T{1}};
+            return a + (b - a) * dist(rng);
+        }
+    }
+};
+
+} // namespace details
+
+inline constexpr details::Random<float> random_float{};
+inline constexpr details::Random<int> random_int{};
 
 // radian
 inline constexpr glm::vec3 spherical_coordinate(float theta, float phi) {
@@ -69,31 +98,6 @@ inline glm::vec3 to_world(const glm::vec3 &direction,
            frame.normal * direction.z;
 }
 
-// 按余弦权重在切线空间 +Z 半球内采样，返回局部方向。
-inline glm::vec3 sample_cosine_hemisphere() {
-    const float r1 = random_float();
-    const float r2 = random_float();
-
-    // const float cos_theta = std::clamp(1.f - r1, 0.f, 1.f);
-    // const float sin_theta = std::sqrt(1.f - cos_theta * cos_theta);
-
-    const float phi = PI_DOUBLE * r2;
-    const float sin_theta = std::sqrt(r1);
-    const float cos_theta = std::sqrt(std::max(0.f, 1.f - r1));
-
-    return glm::vec3{
-        sin_theta * std::cos(phi),
-        sin_theta * std::sin(phi),
-        cos_theta,
-    };
-}
-
-// 兼容接口：围绕 normal 采样，返回世界空间方向。
-inline glm::vec3 sample_cosine_hemisphere(const glm::vec3 &normal) {
-    const TangentFrame frame = build_tangent_frame(normal);
-    return glm::normalize(to_world(sample_cosine_hemisphere(), frame));
-}
-
 // local space: normal = +Z
 inline std::optional<glm::vec3>
 compute_refract_vec(const glm::vec3 &wi_in, float eta_i, float eta_t) {
@@ -127,20 +131,69 @@ inline glm::vec2 uniform_sample_disk(float R) {
     float u1 = random_float();
     float u2 = random_float();
 
-    float r = r * std::sqrt(u1);
-    float theta = PI_DOUBLE * u2;
+    float r = R * std::sqrt(u1);
+    float theta = DOUBLE_PI * u2;
 
     return glm::vec2{r * std::cos(theta), r * std::sin(theta)};
 }
 
-inline glm::vec3 uniform_sample_sphere(float R) {
+inline glm::vec3 uniform_sample_hemisphere() {
     float u1 = random_float();
     float u2 = random_float();
-    float u3 = random_float();
 
-    float cos_theta = 1 - u1;
+    float cos_theta = u1; // 1 - u1
     float sin_theta = std::sqrt(1 - cos_theta * cos_theta);
-    float phi = PI_DOUBLE * u2;
+    float phi = DOUBLE_PI * u2;
 
-    return glm::vec3{};
+    float x = sin_theta * std::cos(phi);
+    float y = sin_theta * std::sin(phi);
+    float z = cos_theta;
+
+    return glm::vec3{x, y, z};
+}
+
+inline glm::vec3 uniform_sample_sphere() {
+    float u1 = random_float();
+    float u2 = random_float();
+
+    float cos_theta = 1 - 2 * u1;
+    float sin_theta = std::sqrt(1 - cos_theta * cos_theta);
+    float phi = DOUBLE_PI * u2;
+
+    float x = sin_theta * std::cos(phi);
+    float y = sin_theta * std::sin(phi);
+    float z = cos_theta;
+
+    return glm::vec3{x, y, z};
+}
+
+inline glm::vec3 uniform_sample_triangle(const glm::vec3 &p0,
+                                         const glm::vec3 &p1,
+                                         const glm::vec3 &p2) {
+    float u1 = random_float();
+    float u2 = random_float();
+
+    float sqrt_u1 = std::sqrt(u1);
+    float b1 = 1.f - sqrt_u1;
+    float b2 = u2 * sqrt_u1;
+
+    glm::vec3 p = (1.f - b1 - b2) * p0 + b1 * p1 + b2 * p2;
+
+    return p;
+}
+
+// 按余弦权重在切线空间 +Z 半球内采样，返回局部方向。
+inline glm::vec3 cosine_sample_hemisphere() {
+    const float r1 = random_float();
+    const float r2 = random_float();
+
+    const float phi = DOUBLE_PI * r2;
+    const float sin_theta = std::sqrt(r1);
+    const float cos_theta = std::sqrt(std::max(0.f, 1.f - r1));
+
+    return glm::vec3{
+        sin_theta * std::cos(phi),
+        sin_theta * std::sin(phi),
+        cos_theta,
+    };
 }

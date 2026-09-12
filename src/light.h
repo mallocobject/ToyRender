@@ -5,9 +5,18 @@
 #include "utils.h"
 #include <cassert>
 #include <cmath>
+#include <memory>
+
+struct LightSample {
+    glm::vec3 s{};
+    Color radiance{};
+    float pdf{1.f};
+};
+
 class Light {
   public:
-    virtual Color get_radiance(const glm::vec3 &p, glm::vec3 &s) const = 0;
+    virtual ~Light() = default;
+    virtual LightSample get_radiance(const glm::vec3 &) const = 0;
 };
 
 class DirectionalLight : public Light {
@@ -20,7 +29,7 @@ class DirectionalLight : public Light {
         : direction_(glm::normalize(direction)), radiance_(radiance) {
     }
 
-    Color get_radiance(const glm::vec3 &p, glm::vec3 &s) const override;
+    LightSample get_radiance(const glm::vec3 &p) const override;
 };
 
 class PointLight : public Light {
@@ -37,7 +46,7 @@ class PointLight : public Light {
           attenuations_(attenuations) {
     }
 
-    Color get_radiance(const glm::vec3 &p, glm::vec3 &s) const override;
+    LightSample get_radiance(const glm::vec3 &p) const override;
 };
 
 class SpotLight : public PointLight {
@@ -60,5 +69,22 @@ class SpotLight : public PointLight {
         assert(cos_inner_angle_ - cos_outer_angle_ > 1e-6f);
     }
 
-    Color get_radiance(const glm::vec3 &p, glm::vec3 &s) const override;
+    LightSample get_radiance(const glm::vec3 &p) const override;
+};
+
+class SceneObject;
+
+class AreaLight : public Light {
+  private:
+    std::weak_ptr<SceneObject> scene_object_;
+
+  public:
+    explicit AreaLight(const std::shared_ptr<SceneObject> &scene_object)
+        : scene_object_(scene_object) {
+        assert(scene_object);
+    }
+
+    LightSample get_radiance(const glm::vec3 &p) const override;
+
+    std::shared_ptr<SceneObject> get_scene_object() const;
 };

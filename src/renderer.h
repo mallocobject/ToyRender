@@ -37,7 +37,8 @@ class Renderer {
   private:
     Color render_pixel(int x, int y) const;
     Color render_sub_pixed(float px, float py) const;
-    Color get_radiance(Ray &ray, int depth = 0) const;
+    Color
+    get_radiance(Ray &ray, int depth = 0, bool pre_is_delta = false) const;
 
     void run_render_thread();
 };

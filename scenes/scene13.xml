@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scene version="1.0">
+    <camera position="0,0.64,-2.58"
+            target="0,0.61,3"
+            up="0,1,0"
+            fov="45"
+            near="0.1"
+            far="1000"/>
+
+    <materials>
+        <material name="M_Lambert_Red"
+                  type="lambert"
+                  albedo="1.0,0.3,0.3"/>
+        <material name="M_Lambert_Blue"
+                  type="lambert"
+                  albedo="0.3,0.3,1.0"/>
+        <material name="M_Lambert_Gray"
+                  type="lambert"
+                  albedo="0.8,0.8,0.8"/>
+
+        <!-- 面积光材质：emissive 是材质自身的属性 -->
+        <material name="M_Area_Light"
+                  type="lambert"
+                  albedo="0.8,0.8,0.8"
+                  emissive="10,10,10"/>
+
+        <material name="M_Glass_Sphere"
+                  type="dielectric"
+                  eta="1.5"
+                  transmissionColor="1,1,1"
+                  reflectionColor="1,1,1"/>
+        <material name="M_Glass_Sphere2"
+                  type="dielectric"
+                  eta="1.4"
+                  transmissionColor="1,1,0.75"
+                  reflectionColor="1,1,1"/>
+    </materials>
+
+    <objects>
+        <!-- 面积光：object 只负责几何，AreaLight 从该 object 抽离出来注册 -->
+        <object name="area_light"
+                material="M_Area_Light"
+                areaLight="true"
+                position="0,1.499,0"
+                rotation="90,0,0"
+                scale="1,1,1">
+            <triangle v0="-0.4,-0.3,0" v1="0.4,-0.3,0" v2="0.4,0.3,0"/>
+            <triangle v0="-0.4,-0.3,0" v1="0.4,0.3,0" v2="-0.4,0.3,0"/>
+        </object>
+
+        <!-- 左球 -->
+        <object name="left_sphere"
+                material="M_Lambert_Gray"
+                position="-0.4,0.3,0.3"
+                rotation="0,0,0"
+                scale="1,1,1">
+            <sphere radius="0.3"/>
+        </object>
+
+        <!-- 右球：玻璃 -->
+        <object name="right_sphere"
+                material="M_Glass_Sphere"
+                position="0.4,0.3,-0.3"
+                rotation="0,0,0"
+                scale="1,1,1">
+            <sphere radius="0.3"/>
+        </object>
+
+        <!-- 地面 -->
+        <object name="ground"
+                material="M_Lambert_Gray"
+                position="0,0,0"
+                rotation="-90,0,0"
+                scale="1,1,1">
+            <triangle v0="-1,-1,0" v1="1,-1,0" v2="1,1,0"/>
+            <triangle v0="-1,-1,0" v1="1,1,0" v2="-1,1,0"/>
+        </object>
+
+        <!-- 天花板 -->
+        <object name="ceiling"
+                material="M_Lambert_Gray"
+                position="0,1.5,0"
+                rotation="90,0,0"
+                scale="1,1,1">
+            <triangle v0="-1,-1,0" v1="1,-1,0" v2="1,1,0"/>
+            <triangle v0="-1,-1,0" v1="1,1,0" v2="-1,1,0"/>
+        </object>
+
+        <!-- 左墙 -->
+        <object name="left_wall"
+                material="M_Lambert_Red"
+                position="-1,0.75,0"
+                rotation="0,90,0"
+                scale="1,1,1">
+            <triangle v0="-1,-0.75,0" v1="1,-0.75,0" v2="1,0.75,0"/>
+            <triangle v0="-1,-0.75,0" v1="1,0.75,0" v2="-1,0.75,0"/>
+        </object>
+
+        <!-- 右墙 -->
+        <object name="right_wall"
+                material="M_Lambert_Blue"
+                position="1,0.75,0"
+                rotation="0,-90,0"
+                scale="1,1,1">
+            <triangle v0="-1,-0.75,0" v1="1,-0.75,0" v2="1,0.75,0"/>
+            <triangle v0="-1,-0.75,0" v1="1,0.75,0" v2="-1,0.75,0"/>
+        </object>
+
+        <!-- 后墙 -->
+        <object name="back_wall"
+                material="M_Lambert_Gray"
+                position="0,0.75,1"
+                rotation="180,0,0"
+                scale="1,1,1">
+            <triangle v0="-1,-0.75,0" v1="1,-0.75,0" v2="1,0.75,0"/>
+            <triangle v0="-1,-0.75,0" v1="1,0.75,0" v2="-1,0.75,0"/>
+        </object>
+    </objects>
+</scene>

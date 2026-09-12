@@ -20,9 +20,16 @@ inline Ray operator*(const glm::mat4 &m, const Ray &r) {
 
 class SceneObject;
 
+struct PrimitiveSample {
+    glm::vec3 p{};
+    glm::vec3 normal{};
+    float pdf{1.f};
+};
+
 class Primitive {
   protected:
     SceneObject &parent_;
+    float area_{0.f};
 
   public:
     Primitive(SceneObject &parent) : parent_(parent) {
@@ -31,4 +38,10 @@ class Primitive {
     virtual ~Primitive() = default;
 
     virtual bool intersect(const Ray &ray, Intersection &isect) const = 0;
+
+    virtual PrimitiveSample sample() const = 0;
+
+    float area() const noexcept {
+        return area_;
+    }
 };
